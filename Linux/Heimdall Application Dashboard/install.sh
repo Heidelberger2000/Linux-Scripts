@@ -8,8 +8,7 @@ apt install docker.io docker-compose -y
 mkdir /heimdall
 cd /heimdall
 mkdir /heimdall-data
-echo "
-version: "2.1"
+echo "version: "2.1"
 services:
   heimdall:
     image: linuxserver/heimdall
