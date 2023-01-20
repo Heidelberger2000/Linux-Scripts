@@ -2,6 +2,8 @@
 
 # https://heimdall.site/
 
+apt update
+apt upgrade -y
 apt install docker.io docker-compose -y 
 mkdir /heimdall
 cd /heimdall
