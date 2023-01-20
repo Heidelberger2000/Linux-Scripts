@@ -4,7 +4,7 @@
 
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y install software-properties-common ca-certificates lsb-release apt-transport-https install apache2 mariadb-server mariadb-client openssl install php8.1 php8.1-mysql php8.1-mbstring php8.1-xml php8.1-curl 
+sudo apt install -y install software-properties-common ca-certificates lsb-release apt-transport-https apache2 mariadb-server mariadb-client openssl php8.1 php8.1-mysql php8.1-mbstring php8.1-xml php8.1-curl
 sudo rm /etc/php/8.1/apache2/php.ini
 sudo cp php8.1.ini /etc/php/8.1/apache2/php.ini
 systemctl restart apache2
