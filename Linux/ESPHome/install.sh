@@ -4,7 +4,7 @@
 
 apt-get update
 apt-get -y upgrade
-apt install python3-pip python3-venv
+apt install wget python3-pip python3-venv
 useradd --home-dir=/opt/esphome --create-home esphome
 # su - esphome
 python3 -m venv venv
@@ -32,6 +32,12 @@ Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target" >> /lib/systemd/system/esphomedashboard.service
+
+cd ~
+wget https://raw.githubusercontent.com/Heidelberger2000/Scripts/main/Linux/ESPHome/ESPHome.sh
+cp ESPHome.sh /etc/cron.daily/ESPHome.sh
+
+chmox +x /etc/cron.daily/ESPHome.sh
 
 systemctl daemon-reload
 systemctl start esphomedashboard.service
