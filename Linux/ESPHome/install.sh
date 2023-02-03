@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Quelle:  https://community.home-assistant.io/t/autostart-esphome-dashboard/117530/18
+
 apt-get update
 apt-get -y upgrade
 apt install python3-pip python3-venv
