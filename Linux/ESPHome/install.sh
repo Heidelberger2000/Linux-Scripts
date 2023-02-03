@@ -33,6 +33,18 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target" >> /lib/systemd/system/esphomedashboard.service
 
+echo "#!/bin/bash
+
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -U esphome
+systemctl start esphomedashboard.service
+#HEUTE=$(date + ^`^}Heute ist %A, der %d %B ^`^})
+#TIMENOW=$(date + ^`^}Die lokale Zeit ist  ^`^|%r ^`^})
+d=`date +%Y-%m-%d-%H-%M`
+V=`esphome version`
+echo $d " -  cronjob gelaufen. Aktuelle" $V  >> /opt/esphome/config/1-Logfile.yaml" >> /etc/cron.daily/ESPHome.sh
+chmod +x /etc/cron.daily/ESPHome.sh
 systemctl daemon-reload
 systemctl start esphomedashboard.service
 systemctl enable esphomedashboard.service
