@@ -3,7 +3,7 @@ apt-get update
 apt-get -y upgrade
 apt install python3-pip python3-venv
 useradd --home-dir=/opt/esphome --create-home esphome
-su - esphome
+# su - esphome
 python3 -m venv venv
 source venv/bin/activate
 pip install esphome
