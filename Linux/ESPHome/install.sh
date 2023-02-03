@@ -10,6 +10,7 @@ useradd --home-dir=/opt/esphome --create-home esphome
 python3 -m venv venv
 source venv/bin/activate
 pip install esphome
+pip install pillow
 
 echo "#!/bin/bash
 
