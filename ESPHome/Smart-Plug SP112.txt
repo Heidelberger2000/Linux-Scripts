@@ -1,0 +1,143 @@
+substitutions:
+  devicename: plug-
+  upper_devicename: Gosund Smart Plug
+  # Real Current / Device Current = current_correct
+  current_correct: "0.9072"
+  # Real Volt / Device Volt = voltage_correct
+  # sample.. 220.0 / 118,454888452 = 1.8572471163918900787856528502976
+  voltage_correct: "1.9141274043472118057172858153017"
+  # Real Power / Device Power = power_correct28.31553
+  power_correct: "2.1189785252121362376052999890873"
+  name_add_mac_suffix: "false"
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp8285
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: on
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret hotspot_ssid
+    password: !secret hotspot_password
+
+captive_portal:
+
+# Enable logging
+logger:
+  hardware_uart: UART1
+
+# Enable Home Assistant API
+api:
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+# Time used for daily KWh usage  
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+
+status_led:
+  pin:
+    number: GPIO02
+    inverted: true
+
+output:
+- platform: gpio
+  id: red_led_output            # Red LED
+  pin:
+    number: GPIO00
+  inverted: true
+
+- platform: gpio
+  id: blue_led_output           # Blue LED
+  pin:
+    number: GPIO02
+  inverted: true
+
+switch:
+  - platform: gpio
+    name: "${upper_devicename} Switch"
+    id: switchvoltage
+    pin: GPIO14
+    on_turn_on:
+      - output.turn_on: red_led_output
+    on_turn_off:
+      - output.turn_off: blue_led_output
+  - platform: gpio
+    name: "${upper_devicename} USB-Switch"
+    id: switchusb
+    pin:
+      number: GPIO05
+#      inverted: true
+
+binary_sensor:
+# Binary sensor for the hardware button press
+  - platform: gpio
+    name: "${upper_devicename} Button"
+    id: relay
+    pin:
+      number: GPIO16
+      inverted: true
+    internal: True
+    on_press:
+    - switch.toggle: switchusb
+    - switch.toggle: switchvoltage
+
+
+sensor:
+  - platform: cse7766
+    update_interval: 5s
+
+    current:
+      name: "${upper_devicename} Amperage"
+      unit_of_measurement: A
+      accuracy_decimals: 3
+      icon: mdi:flash-circle
+      filters:
+        - lambda: return x * ${current_correct};
+
+    voltage:
+      name: "${upper_devicename} Voltage"
+      unit_of_measurement: V
+#      accuracy_decimals: 3
+      icon: mdi:flash-circle
+      filters:
+        - lambda: return x * ${voltage_correct};
+
+    power:
+      name: "${upper_devicename} Wattage"
+      unit_of_measurement: W
+#      accuracy_decimals: 3
+      id: "Wattage"
+      icon: mdi:flash-circle
+      filters:
+        - lambda: return x * ${power_correct};
+    
+  - platform: total_daily_energy
+    name: "${upper_devicename} Total Daily Energy"
+    power_id: "Wattage"
+    filters:
+        # Multiplication factor from W to kW is 0.001
+        - multiply: 0.001
+    unit_of_measurement: kWh
+    icon: mdi:clock-alert
+
+  - platform: uptime
+    name: "${upper_devicename} Uptime"
+    icon: mdi:clock-outline
+  - platform: wifi_signal
+    name: "${upper_devicename} Wifi Signal"
+    update_interval: 60s
