@@ -1,0 +1,12 @@
+Athom Smart Plug TP29
+
+https://www.esphome-devices.com/devices/Athom-Smart-Plug-TP29
+
+Pin	    Function
+---------------------
+GPIO3	  Button
+GPIO4 	BL0937 CF
+GPIO5	  HLWBL CF1
+GPIO12	HLWBL SELi
+GPIO13	LedLink
+GPIO14	Relay
