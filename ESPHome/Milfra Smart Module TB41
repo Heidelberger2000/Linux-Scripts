@@ -2,6 +2,8 @@ Milfra Smart Module TB41
 
 https://templates.blakadder.com/milfra_TB41.html
 
+{"NAME":"Milfra Smart Module TB41","GPIO":[576,0,0,225,2688,2656,0,0,2592,193,480,224,192,0],"FLAG":0,"BASE":18}
+
 GPIO #	Component
 GPIO00	LedLinki
 GPIO01	None
