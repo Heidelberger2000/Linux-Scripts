@@ -1,1 +1,1 @@
-1
+# Vorlagen für ESPHome Geräte
