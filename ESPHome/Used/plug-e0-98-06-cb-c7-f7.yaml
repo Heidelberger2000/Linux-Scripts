@@ -1,0 +1,129 @@
+# Gosund SP112 v3.4
+substitutions:
+  devicename: plug-e0-98-06-cb-c7-f7
+  upper_devicename: Gosund Smart Plug
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp8285
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: on
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret hotspot_ssid
+    password: !secret hotspot_password
+
+captive_portal:
+
+# Enable logging
+logger:
+#  hardware_uart: UART1
+  logs:
+    sensor: INFO
+    adc: INFO
+
+# Enable Home Assistant API
+api:
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+# Time used for daily KWh usage  
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+uart:
+  rx_pin: RX
+  baud_rate: 9600
+
+status_led:
+  pin:
+    number: GPIO02
+    inverted: true
+
+output:
+- platform: gpio
+  id: red_led_output            # Red LED
+  pin:
+    number: GPIO00
+  inverted: true
+
+- platform: gpio
+  id: blue_led_output           # Blue LED
+  pin:
+    number: GPIO02
+  inverted: true
+
+switch:
+  - platform: gpio
+    name: "${upper_devicename} Switch"
+    id: switchvoltage
+    pin: GPIO14
+    on_turn_on:
+      - output.turn_on: red_led_output
+    on_turn_off:
+      - output.turn_off: blue_led_output
+  - platform: gpio
+    name: "${upper_devicename} USB-Switch"
+    id: switchusb
+    pin:
+      number: GPIO13
+      inverted: true
+
+binary_sensor:
+  - platform: template
+    id: button1
+    # read analog sensor and convert it's value to binary state
+    lambda: return (id(button_adc).state < .5);
+    on_click:
+      # short button press toggles mains
+      - min_length: 10ms
+        max_length: 250ms
+        then:
+          - switch.toggle: switchvoltage
+      # long button press toggles USB
+      - min_length: 250ms
+        max_length: 1000ms
+        then:
+          - switch.toggle: switchusb
+
+
+sensor:
+  - platform: adc
+    id: button_adc
+    pin: A0
+    update_interval: .1s
+  - platform: hlw8012
+    sel_pin:
+      number: GPIO12
+      inverted: True
+    cf_pin: GPIO05
+    cf1_pin: GPIO04
+    current_resistor: 0.00221
+    voltage_divider: 723
+    change_mode_every: 8
+    update_interval: 5s
+    current:
+      id: amperage
+      name: "${upper_devicename}Amperage"
+      unit_of_measurement: A
+      accuracy_decimals: 2
+    voltage:
+      id: voltage
+      name: "${upper_devicename}Voltage"
+      unit_of_measurement: V
+      accuracy_decimals: 2
+    power:
+      id: wattage
+      name: "${upper_devicename}Wattage"
+      unit_of_measurement: W
+      accuracy_decimals: 2

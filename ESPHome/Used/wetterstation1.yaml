@@ -1,0 +1,251 @@
+esphome:
+  name: "wetterstation1"
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+#api:
+
+# Example configuration entry
+mqtt:
+  broker: 10.24.99.111
+#  username: livingroom
+#  password: !secret mqtt_password
+
+ota:
+  password: "65cedf8b3bf1772d39f5900e521a934b"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Wetterstation2 Fallback Hotspot"
+    password: "iR3we2XYAdHs"
+
+captive_portal:
+    
+#time:
+#  - platform: homeassistant
+#    id: homeassistant_time
+
+web_server:
+  port: 80
+
+i2c:
+  sda: 5
+  scl: 4
+  scan: true
+  id: i2c0
+  
+tca9548a:
+  - address: 0x70
+    id: multiplex0
+    i2c_id: i2c0
+    channels:
+      - bus_id: multiplex0channel0
+        channel: 0
+      - bus_id: multiplex0channel1
+        channel: 1
+      - bus_id: multiplex0channel2
+        channel: 2
+      - bus_id: multiplex0channel3
+        channel: 3
+      - bus_id: multiplex0channel4
+        channel: 4
+      - bus_id: multiplex0channel5
+        channel: 5
+      - bus_id: multiplex0channel6
+        channel: 6
+      - bus_id: multiplex0channel7
+        channel: 7
+  - address: 0x71
+    id: multiplex1
+    i2c_id: i2c0
+    channels:
+      - bus_id: multiplex1channel0
+        channel: 0
+      - bus_id: multiplex1channel1
+        channel: 1
+      - bus_id: multiplex1channel2
+        channel: 2
+      - bus_id: multiplex1channel3
+        channel: 3
+      - bus_id: multiplex1channel4
+        channel: 4
+      - bus_id: multiplex1channel5
+        channel: 5
+      - bus_id: multiplex1channel6
+        channel: 6
+      - bus_id: multiplex1channel7
+        channel: 7
+
+font:
+#  - file: "fonts/Comic Sans MS.ttf"
+#    id: my_font
+#    size: 20
+
+  # gfonts://family[@weight]
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 20
+
+display:
+#  - platform: ssd1306_i2c
+#    i2c_id: multiplex0channel0
+#    model: "SSD1306 128x64"
+#    reset_pin: D0
+#    address: 0x3C
+#    lambda: |-
+#      it.print(0, 0, id(roboto), "Hello World!");
+
+text_sensor:
+  - platform: template
+    name: Uptime Human Readable
+    id: uptime_human
+    icon: mdi:clock-start
+    
+sensor:
+  - platform: ina3221
+    i2c_id: multiplex1channel1
+    channel_1:
+      shunt_resistance: 0.1 ohm
+      current:
+        name: "INA3221 Channel 1_1 Current"
+        icon: mdi:current-dc
+      power:
+        name: "INA3221 Channel 1_1 Power"
+      bus_voltage:
+        name: "INA3221 Channel 1_1 Bus Voltage"
+#      shunt_voltage:
+#        name: "INA3221 Channel 1_1 Shunt Voltage"
+    channel_2:
+      shunt_resistance: 0.1 ohm
+      current:
+        name: "INA3221 Channel 2_1 Current"
+        icon: mdi:current-dc
+      power:
+        name: "INA3221 Channel 2_1 Power"
+      bus_voltage:
+        name: "INA3221 Channel 2_1 Bus Voltage"
+#      shunt_voltage:
+#        name: "INA3221 Channel 2_1 Shunt Voltage"
+    channel_3:
+      shunt_resistance: 0.1 ohm
+      current:
+        name: "INA3221 Channel 3_1 Current"
+        icon: mdi:current-dc
+      power:
+        name: "INA3221 Channel 3_1 Power"
+      bus_voltage:
+        name: "INA3221 Channel 3_1 Bus Voltage"
+#      shunt_voltage:
+#        name: "INA3221 Channel 3_1 Shunt Voltage"
+    update_interval: 60s
+
+  - platform: ina3221
+    i2c_id: multiplex1channel2
+    channel_1:
+      shunt_resistance: 0.1 ohm
+      current:
+        name: "INA3221 Channel 1_2 Current"
+        icon: mdi:current-dc
+      power:
+        name: "INA3221 Channel 1_2 Power"
+      bus_voltage:
+        name: "INA3221 Channel 1_2 Bus Voltage"
+#      shunt_voltage:
+#        name: "INA3221 Channel 1_2 Shunt Voltage"
+    channel_2:
+      shunt_resistance: 0.1 ohm
+      current:
+        name: "INA3221 Channel 2_2 Current"
+        icon: mdi:current-dc
+      power:
+        name: "INA3221 Channel 2_2 Power"
+      bus_voltage:
+        name: "INA3221 Channel 2_2 Bus Voltage"
+#      shunt_voltage:
+#        name: "INA3221 Channel 2_2 Shunt Voltage"
+#    channel_3:
+#      shunt_resistance: 0.1 ohm
+#      current:
+#        name: "INA3221 Channel 3_2 Current"
+#        icon: mdi:current-dc
+#      power:
+#        name: "INA3221 Channel 3_2 Power"
+#      bus_voltage:
+#        name: "INA3221 Channel 3_2 Bus Voltage"
+#      shunt_voltage:
+#        name: "INA3221 Channel 3_2 Shunt Voltage"
+    update_interval: 60s
+    
+  - platform: bh1750
+    id: bh1750_illuminance
+    state_class: "measurement"
+    device_class: "illuminance"
+    unit_of_measurement: "lx"
+    name: "Lichtstärke Sensor"
+    i2c_id: multiplex0channel1
+    update_interval: 60s
+  
+  - platform: bmp085
+    temperature:
+      name: "Temperatur"
+      unit_of_measurement: "°C"
+      icon: "mdi:water-percent"
+      device_class: "temperature"
+      state_class: "measurement"
+    pressure:
+      name: "Luftdruck"
+      unit_of_measurement: "hPa"
+      device_class: "pressure"
+      state_class: "measurement"
+    i2c_id: multiplex0channel0
+    update_interval: 60s
+  
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    icon: mdi:signal-variant
+    update_interval: 60s
+  
+  - platform: uptime
+    name: Uptime Sensor
+    id: uptime_sensor
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+    
+switch:
+#  - platform: gpio
+#    id: relay_right
+#    icon: mdi:water
+#    name: "Relay Right / Brunnen"
+#    pin: 14
+
+  - platform: gpio
+    id: relay_left
+    icon: mdi:string-lights
+    name: "Relay Left / Beleuchtung"
+    pin: 13

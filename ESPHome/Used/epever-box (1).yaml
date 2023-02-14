@@ -1,0 +1,337 @@
+esphome:
+  name: "epever-box"
+  platformio_options:
+    ## larger stack size required with all registers enable_load_test
+    ## reduce registers or wait for integration of 2.0.0 arduinoespressif32
+    ## not yet working needs 2.0
+    build_flags:
+      - -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
+
+  on_boot:
+    ## configure controller settings at setup
+    ## make sure priority is lower than setup_priority of modbus_controller
+    priority: -100
+    then:
+      - lambda: |-
+          // get local time and sync to controller
+          time_t now = ::time(nullptr);
+          struct tm *time_info = ::localtime(&now);
+          int seconds = time_info->tm_sec;
+          int minutes = time_info->tm_min;
+          int hour = time_info->tm_hour;
+          int day = time_info->tm_mday;
+          int month = time_info->tm_mon + 1;
+          int year = time_info->tm_year % 100;
+          esphome::modbus_controller::ModbusController *controller = id(epever);
+          // if there is no internet connection localtime returns year 70
+          if (year != 70) {
+            // create the payload
+            std::vector<uint16_t> rtc_data = {uint16_t((minutes << 8) | seconds), uint16_t((day << 8) | hour),
+                                              uint16_t((year << 8) | month)};
+            // Create a modbus command item with the time information as the payload
+            esphome::modbus_controller::ModbusCommandItem set_rtc_command =
+                esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x9013, 3, rtc_data);
+            // Submit the command to the send queue
+            epever->queue_command(set_rtc_command);
+            ESP_LOGI("ModbusLambda", "EPSOLAR RTC set to %02d:%02d:%02d %02d.%02d.%04d", hour, minutes, seconds, day, month,
+                    year + 2000);
+          }
+          // Battery settings
+          // Note: these values are examples only and apply my AGM Battery
+          std::vector<uint16_t> battery_settings1 = {
+              0,       // 9000 Battery Type 2 =  GEL == 0=User defined, 1=Sealed , 2=GEL, 3=Flooded,
+              1,       // 9067 Battery rated voltage level == 0=auto recognize. 1=12V, 2=24V ,3=36V，4=48V
+              0x0009,  // 9001 Battery Cap 0x55 == 9 AH
+              0x012C,  // 9002 Temp compensation -3V /°C/2V
+              0x05DC,  // 9003 0x5DC == 1500 Over Voltage Disconnect Voltage 15,0
+              0x058C,  // 9004 0x58C == 1480 Charging Limit Voltage 14,8
+              0x05A0,  // 9005 Over Voltage Reconnect Voltage 14,4
+              0x05BF,  // 9006 Equalize Charging Voltage 14,6
+              0x05A0,  // 9007 Boost Charging Voltage 14,4
+              0x0564,  // 9008 Float Charging Voltage 13,8
+              0x0564,  // 9009 Boost Reconnect Charging Voltage 13,8
+              0x04C4,  // 900A Low Voltage Reconnect Voltage 12,2
+              0x04B0,  // 900B Under Voltage Warning Reconnect Voltage 12,0
+              0x04BA,  // 900c Under Volt. Warning Volt 12,1
+              0x04BA,  // 900d Low Volt. Disconnect Volt. 11.8
+              0x04BA   // 900E Discharging Limit Voltage 11.8
+          };
+
+          // Boost and equalization periods
+          std::vector<uint16_t> battery_settings3 = {
+              0x0000,  // 906B Equalize Duration (min.) 0
+              0x0075   // 906C Boost Duration (aka absorb) 117 mins
+          };
+          esphome::modbus_controller::ModbusCommandItem set_battery1_command =
+              esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x9000, battery_settings1.size() ,
+                                                                                          battery_settings1);
+          //   esphome::modbus_controller::ModbusCommandItem set_battery2_command =
+          //   esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x900A, battery_settings2.size() ,
+          //                                                                              battery_settings2);
+
+          esphome::modbus_controller::ModbusCommandItem set_battery3_command =
+              esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x906B, battery_settings3.size(),
+                                                                                          battery_settings3);
+          delay(200) ;
+          controller->queue_command(set_battery1_command);
+          delay(200) ;
+          // controller->queue_command(set_battery2_command);
+          // delay(200) ;
+          controller->queue_command(set_battery3_command);
+          ESP_LOGI("ModbusLambda", "EPSOLAR Battery set");
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+  hardware_uart: uart1
+
+# Enable Home Assistant API
+api:
+
+ota:
+  password: "3a526215cdd13ba8e9e92a194066ab57"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Epever-Box Fallback Hotspot"
+    password: "LrHxaUhOdf3o"
+
+captive_portal:
+
+substitutions:
+  updates: 5s
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+web_server:
+  port: 80
+  auth:
+    username: admin
+    password: Tosca1305#
+
+uart:
+  id: mod_bus
+  tx_pin: 3
+  rx_pin: 1
+  baud_rate: 115200
+  stop_bits: 1
+
+modbus:
+  #flow_control_pin: 23
+  send_wait_time: 200ms
+  id: mod_bus_epever
+
+modbus_controller:
+  - id: epever
+    ## the Modbus device addr
+    address: 0x1
+    modbus_id: mod_bus_epever
+    command_throttle: 200ms
+    setup_priority: -10
+    update_interval: ${updates}
+
+text_sensor:
+  - platform: template
+    name: Uptime Human Readable
+    id: uptime_human
+    icon: mdi:clock-start
+    
+binary_sensor:
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_internal_resistance_abnormal
+    name: "Battery internal resistance abnormal"
+    register_type: read
+    address: 0x3200
+    bitmask: 0x80 #(bit 8)
+ 
+
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_type
+    address: 0x9000
+    name: "Battery Type"
+    register_type: holding
+    value_type: U_WORD
+    skip_updates: 50
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: length_of_night_minutes
+    address: 0x9065
+    internal: true
+    bitmask: 0xFF
+    unit_of_measurement: "m"
+    name: "Length of night-mins"
+    register_type: holding
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: length_of_night
+    address: 0x9065
+    bitmask: 0xFF00
+    unit_of_measurement: "m"
+    name: "Length of night"
+    register_type: holding
+    value_type: U_WORD
+    skip_updates: 50
+    filters:
+      - lambda: return id(length_of_night_minutes).state  + ( 60 * x);
+      
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_voltage
+    name: "Charging voltage"
+    address: 0x3104
+    unit_of_measurement: "V"
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_current
+    icon: mdi:current-dc
+    name: "Charging current"
+    address: 0x3105
+    unit_of_measurement: "A"
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+  
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: load_current
+    name: "Load Current"
+    icon: mdi:current-dc
+    address: 0x310D
+    unit_of_measurement: "A"
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+      
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: device_temperature
+    name: "Device temperature"
+    address: 0x3111
+    unit_of_measurement: °C
+    register_type: read
+    value_type: S_WORD
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+      
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: generated_energy_total
+    name: "Generated energy total"
+    address: 0x3312
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: pv_input_voltage
+    name: "PV array input voltage"
+    address: 0x3100
+    unit_of_measurement: "V" ## for any other unit the value is returned in minutes
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: pv_input_current
+    name: "PV array input current"
+    address: 0x3101
+    unit_of_measurement: "A" ## for any other unit the value is returned in minutes
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Battery Capacity"
+    id: battery_capacity
+    register_type: holding
+    address: 0x9001
+    unit_of_measurement: "AH"
+    value_type: U_WORD
+
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    icon: mdi:signal-variant
+    update_interval: 60s
+  
+  - platform: uptime
+    name: Uptime Sensor
+    id: uptime_sensor
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+    
+switch:
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: manual_control_load
+    register_type: coil
+    address: 2
+    name: "manual control the load"
+    bitmask: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: default_control_the_load
+    register_type: coil
+    address: 3
+    name: "default control the load"
+    bitmask: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: force_load
+    register_type: coil
+    address: 6
+    name: "Force Load on/off"
+    bitmask: 1
+    
