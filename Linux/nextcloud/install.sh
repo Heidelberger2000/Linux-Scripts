@@ -15,7 +15,7 @@ exit;
 EOF
 
 cd /var/www/html
-wget https://download.nextcloud.com/server/releases/nextcloud-24.0.1.zip && unzip nextcloud-24.0.1.zip
+wget https://download.nextcloud.com/server/releases/nextcloud-24.0.1.zip && unzip nextcloud-24.0.1.zip && rm nextcloud-24.0.1.zip
 chown -R www-data:www-data /var/www/html/nextcloud
 
 wget https://raw.githubusercontent.com/Heidelberger2000/Scripts/main/Linux/nextcloud/nextcloud.conf && sudo cp nextcloud.conf /etc/apache2/sites-available/
