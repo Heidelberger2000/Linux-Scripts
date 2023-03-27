@@ -24,8 +24,8 @@ chmod -R 755 /opt/heimdall/
 rm /var/www/html/index.html
 ln -s /opt/heimdall/public/ /var/www/html
 echo -e "\e[33mApache-Conf anpassen ...\e[0m"
-
-/etc/apache2/sites-available/000-default.conf
+wget https://raw.githubusercontent.com/Heidelberger2000/Scripts/main/Linux/Heimdall%20Application%20Dashboard/000-default.conf
+cp 000-default.conf /etc/apache2/sites-available/000-default.conf
 
 echo -e "\e[33mStarte Apache neu ...\e[0m"
 systemctl restart apache2
