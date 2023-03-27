@@ -1,1 +1,1 @@
-#Das Script benötigt Root-Rechte
+# Das Script benötigt Root-Rechte
