@@ -1,4 +1,4 @@
-emtlaapt update
+apt update
 apt install mdadm
 modprobe -a md linear multipath raid0 raid1 raid5 raid6 raid10
 
